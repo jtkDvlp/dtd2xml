@@ -10,9 +10,14 @@
   (:import
    [clojure.lang ExceptionInfo]))
 
-(defn- generate
-  [options]
-  (println "demo generate with" options))
+
+(defn generate
+  [{:keys [xsd xml] :as opts}]
+  (log/debug "generate" opts)
+  (when-not xsd (throw (ex-info "missing xsd" {:code [:missing :xsd] :xsd xsd})))
+  (when-not xml (throw (ex-info "missing xml" {:code [:missing :xml] :xml xml})))
+
+  (println "got all options :+1"))
 
 (def ^:private options
   [["-v" nil "Verbosity level"
