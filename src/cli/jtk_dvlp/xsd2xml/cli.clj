@@ -27,7 +27,7 @@
 
 (def ^:private actions
   [["generate" #'generate "Generates XML by XSD"
-    [["-i" "--dtd FILE" "XSD file"
+    [["-i" "--xsd FILE" "XSD file"
       :validate [#(.exists (io/file %)) "File not found"]]
 
      ["-o" "--xml FILE" "XML file"
@@ -35,7 +35,7 @@
 
 (defn- print-options
   [options-summary action]
-  (->> [(str "Usage: dtd2xml [options] " action " [options]")
+  (->> [(str "Usage: xsd2xml [options] " action " [options]")
         ""
         "Options:"
         options-summary
