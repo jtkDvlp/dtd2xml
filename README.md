@@ -1,3 +1,3 @@
-# dtd2xml
+# xsd2xml
 
 will follow

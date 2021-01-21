@@ -1,9 +1,9 @@
-(defproject jtk-dvlp/dtd2xml "0.0.0-SNAPSHOT"
+(defproject jtk-dvlp/xsdd2xml "0.0.0-SNAPSHOT"
   :description
-  "CI to generate XML-Test-Data via DTD rules."
+  "Generates XML via XSD rules."
 
   :url
-  "https://github.com/jtkDvlp/dtd2xml"
+  "https://github.com/jtkDvlp/xsd2xml"
 
   :license
   {:name
@@ -12,27 +12,30 @@
    :url
    "https://www.eclipse.org/legal/epl-2.0/"}
 
-  :main
-  jtk-dvlp.dtd2xml.main
+  :dependencies
+  [[org.clojure/clojure "1.10.0"]
+   [org.clojure/data.xml "0.0.8"]
+   [com.taoensso/timbre "5.1.0"]]
 
   :source-paths
-  ["src"]
+  ["src/core"]
 
   :target-path
-  "target"
+  "target/%s"
 
   :clean-targets
   ^{:protect false}
   [:target-path]
 
   :profiles
-  {:provided
-   {:dependencies
-    [[org.clojure/clojure "1.10.0"]]}
+  {:cli
+   {:main
+    jtk-dvlp.xsd2xml.cli
 
-   :repl
-   {:repl-options
-    {:init-ns
-     user}}
+    :dependencies
+    [[org.clojure/tools.cli "1.0.194"]]
+
+    :source-paths
+    ["src/cli"]}
 
    ,,,})
