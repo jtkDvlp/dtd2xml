@@ -38,4 +38,8 @@
     :source-paths
     ["src/cli"]}
 
+   :dev
+   {:resource-paths
+    ["resources/dev"]}
+
    ,,,})

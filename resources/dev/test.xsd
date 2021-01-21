@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema
+  xmlns="http://docbook.org/ns/docbook"
+  xmlns:my="this-the-target-ns"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  elementFormDefault="qualified"
+  targetNamespace="this-the-target-ns"
+>
+  <xs:element name="list">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="item" type="my:list-item" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:complexType name="list-item">
+    <xs:sequence>
+      <xs:element name="comment"  type="my:string"  minOccurs="" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="id" type="xs:integer"/>
+    <xs:attributeGroup ref="my:attributes"/>
+  </xs:complexType>
+
+  <xs:attributeGroup name="attributes">
+    <xs:attribute name="idx" type=" xs:token" form="qualified"/>
+    <xs:attribute name="src" type=" xs:token" form="qualified"/>
+  </xs:attributeGroup>
+
+</xs:schema>
