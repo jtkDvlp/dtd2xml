@@ -10,9 +10,9 @@
 (def ^:dynamic *cycles* nil)
 (def ^:dynamic *max-cycles* 3)
 
-(defn cycle-safe-prewalk
-  "Prewalk `form` applying `handle-fn` and stopping by cycling via cycle idenifier by `cycle-fn`."
-  [handle-fn cycle-fn form]
+(defn cycle-safe-walk
+  "Walk `form` applying `pre-fn` and stopping by cycling via cycle idenifier by `cycle-fn` and `post-fn`."
+  [pre-fn post-fn cycle-fn form]
   (binding [*cycles* (atom (if *cycles* @*cycles* {}))]
     (let [cycle
           (cycle-fn form)
@@ -22,45 +22,35 @@
 
       (cond
         (nil? cycle)
-        (walk/walk (partial cycle-safe-prewalk handle-fn cycle-fn) identity (handle-fn form))
+        (walk/walk (partial cycle-safe-walk pre-fn post-fn cycle-fn) post-fn (pre-fn form))
 
         (< cycle-depth *max-cycles*)
         (do
           (swap! *cycles* update cycle #(inc (or % 0)))
-          (let [r (walk/walk (partial cycle-safe-prewalk handle-fn cycle-fn) identity (handle-fn form))]
+          (let [r (walk/walk (partial cycle-safe-walk pre-fn post-fn cycle-fn) post-fn (pre-fn form))]
             (swap! *cycles* update cycle dec)
             r))
 
         :else
         (do
           (log/info "cycle-safe-prewalk" "stop cycle for" cycle)
-          (handle-fn form))))))
+          (pre-fn form))))))
 
-(defn cycle-safe-prewalk-xml
-  [handle-fn cycle-fn xml]
-  (cycle-safe-prewalk
-   (fn [xml]
-     (cond
-       (node/element-node? xml)
-       (handle-fn xml)
+(defn- handle-xml
+  [handle-fn xml]
+  (cond
+    (node/element-node? xml)
+    (handle-fn xml)
 
-       (node/text-node? xml)
-       (str/trim xml)
+    (node/text-node? xml)
+    (str/trim xml)
 
-       :else xml))
+    :else xml))
+
+(defn cycle-safe-xml-walk
+  [pre-fn post-fn cycle-fn xml]
+  (cycle-safe-walk
+   (partial handle-xml pre-fn)
+   (partial handle-xml post-fn)
    cycle-fn
-   xml))
-
-(defn postwalk-xml
-  [f xml]
-  (walk/postwalk
-   (fn [xml]
-     (cond
-       (node/element-node? xml)
-       (f xml)
-
-       (node/text-node? xml)
-       (str/trim xml)
-
-       :else xml))
    xml))

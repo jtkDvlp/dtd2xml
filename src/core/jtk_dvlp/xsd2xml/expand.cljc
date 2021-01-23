@@ -67,28 +67,24 @@
                    (assoc :content %)
                    (update :attrs dissoc :type))))))
 
+(defn type-cycle
+  [xsd-node]
+  (when (node/attrs? #{:type} xsd-node)
+    (get-in xsd-node [:attrs :type])))
+
 (defn expand-xsd
-  [{:keys [types] :as context} xsd-root]
+  [{:keys [types] :as context} xsd-node]
+  (cond
+    (node/element-node? :element #{:type} xsd-node)
+    (expand-type context xsd-node)
 
-  (walk/cycle-safe-prewalk-xml
-   (fn [node]
-     (cond
-       (node/element-node? :element #{:type} node)
-       (expand-type context node)
+    (node/element-node? :attribute #{:type} xsd-node)
+    (expand-attribute context xsd-node)
 
-       (node/element-node? :attribute #{:type} node)
-       (expand-attribute context node)
+    (node/element-node? :attributeGroup #{:ref} xsd-node)
+    (expand-attribute-group context xsd-node)
 
-       (node/element-node? :attributeGroup #{:ref} node)
-       (expand-attribute-group context node)
+    (node/element-node? :simpleContent xsd-node)
+    (update xsd-node :content conj ((-> types :default :provider)))
 
-       (node/element-node? :simpleContent node)
-       (update node :content conj ((-> types :default :provider)))
-
-       :else node))
-
-   (fn [node]
-     (when (node/attrs? #{:type} node)
-       (get-in node [:attrs :type])))
-
-   xsd-root))
+    :else xsd-node))

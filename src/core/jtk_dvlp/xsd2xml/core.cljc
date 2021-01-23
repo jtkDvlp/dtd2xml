@@ -4,6 +4,7 @@
    [taoensso.timbre :as log]
 
    [jtk-dvlp.xsd2xml.node :as node]
+   [jtk-dvlp.xsd2xml.walk :as walk]
    [jtk-dvlp.xsd2xml.collect :as collect]
    [jtk-dvlp.xsd2xml.expand :as expand]))
 
@@ -72,8 +73,11 @@
              (#(assoc-in % [:attrs (str "xmlns:" target-namespace-alias)] target-namespace))
              )]
 
-    (->> xml-root
-         (expand/expand-xsd xsd-context))
+    (walk/cycle-safe-xml-walk
+     (partial expand/expand-xsd xsd-context)
+     identity
+     expand/type-cycle
+     xml-root)
     ,,,))
 
 
