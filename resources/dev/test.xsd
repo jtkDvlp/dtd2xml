@@ -16,7 +16,7 @@
 
   <xs:complexType name="list-item">
     <xs:sequence>
-      <xs:element name="comment"  type="my:string"  minOccurs="" maxOccurs="unbounded"/>
+      <xs:element name="comment"  type="xs:string"  minOccurs="" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="id" type="xs:integer"/>
     <xs:attributeGroup ref="my:attributes"/>

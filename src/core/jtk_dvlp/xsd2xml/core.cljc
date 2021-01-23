@@ -4,7 +4,8 @@
    [taoensso.timbre :as log]
 
    [jtk-dvlp.xsd2xml.node :as node]
-   [jtk-dvlp.xsd2xml.collect :as collect]))
+   [jtk-dvlp.xsd2xml.collect :as collect]
+   [jtk-dvlp.xsd2xml.expand :as expand]))
 
 
 (defn- assoc-parsed-provider
@@ -71,7 +72,8 @@
              (#(assoc-in % [:attrs (str "xmlns:" target-namespace-alias)] target-namespace))
              )]
 
-    xml-root
+    (->> xml-root
+         (expand/expand-xsd xsd-context))
     ,,,))
 
 
@@ -81,9 +83,10 @@
   (->> "test.xsd"
        (clojure.java.io/resource)
        (slurp)
-       (xsd->xml {})
+       (xsd->xml {:types {:default {:provider (constantly "Blindtext")}}})
        ;; (clojure.pprint/pprint)
        (xml/indent-str)
+       (spit "/tmp/test.xml")
        )
 
   ,,,)
