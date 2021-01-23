@@ -48,12 +48,15 @@
         xsd-types
         (collect/collect-types xsd-context xsd-nodes)
 
+        xsd-attrs
+        (collect/collect-attrs xsd-context xsd-nodes)
+
         xsd-attr-groups
         (collect/collect-attr-groups xsd-context xsd-nodes)
 
         xsd-context
         {:types (merge-with assoc-parsed-provider xsd-types types)
-         :attrs attrs
+         :attrs (merge-with assoc-parsed-provider xsd-attrs types)
          :attr-groups (merge-with assoc-parsed-provider xsd-attr-groups attr-groups)
          :options (merge {:occurs 3} options)}
 

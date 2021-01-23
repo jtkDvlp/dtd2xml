@@ -6,10 +6,16 @@
    [jtk-dvlp.xsd2xml.node :as node]))
 
 
-(def ^:private attr-group?
-  (partial node/element-node? :attributeGroup #{:name}))
+(defn collect
+  "Collects all by `collect?` via `collect-fn` of `xsd-nodes` and returns a map of name
+  and {:provider f ...}."
+  [collect? collect-fn context xsd-nodes]
+  (->> xsd-nodes
+       (filter collect?)
+       (map (partial collect-fn context))
+       (util/map-by :name)))
 
-(defn- ->attr-group-provider
+(defn ->node-provider
   [{:keys [target-namespace-alias element-form-default]}
    {{type-name :name :keys [form]} :attrs :as node}]
 
@@ -24,14 +30,27 @@
     {:name name
      :provider (constantly node)}))
 
-(defn collect-attr-groups
+(def ^:private attr?
+  (partial node/element-node? :attribute #{:name}))
+
+(def ^:private ->attr-provider
+  ->node-provider)
+
+(def collect-attrs
+  "Collects all attributes of `xsd-nodes` and returns a map of group-name
+  and {:name group-name :provider f}."
+  (partial collect attr? ->attr-provider))
+
+(def ^:private attr-group?
+  (partial node/element-node? :attributeGroup #{:name}))
+
+(def ^:private ->attr-group-provider
+  ->node-provider)
+
+(def collect-attr-groups
   "Collects all attribute-groups of `xsd-nodes` and returns a map of group-name
   and {:name group-name :provider f}."
-  [context xsd-nodes]
-  (->> xsd-nodes
-       (filter attr-group?)
-       (map (partial ->attr-group-provider context))
-       (util/map-by :name)))
+  (partial collect attr-group? ->attr-group-provider))
 
 (def ^:private type?
   (some-fn
@@ -54,11 +73,7 @@
      :type (-> tag-name (name) (str/replace "Type" "") (keyword))
      :provider (constantly node)}))
 
-(defn collect-types
+(def collect-types
   "Collects all complex- and simple-types of `xsd-nodes` and returns a map of type-name
   and {:name type-name :type [:complex|:simple] :provider f}."
-  [context xsd-nodes]
-  (->> xsd-nodes
-       (filter type?)
-       (map (partial ->type-provider context))
-       (util/map-by :name)))
+  (partial collect type? ->type-provider))
