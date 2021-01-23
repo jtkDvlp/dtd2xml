@@ -2,6 +2,7 @@
   (:require
    [clojure.string :as str]
    [clojure.walk :as walk]
+   [taoensso.timbre :as log]
 
    [jtk-dvlp.xsd2xml.node :as node]))
 
@@ -14,16 +15,26 @@
   [handle-fn cycle-fn form]
   (binding [*cycles* (atom (if *cycles* @*cycles* {}))]
     (let [cycle
-          (cycle-fn form)]
+          (cycle-fn form)
 
-      (if (< (or (@*cycles* cycle) 0) *max-cycles*)
+          cycle-depth
+          (or (@*cycles* cycle) 0)]
+
+      (cond
+        (nil? cycle)
+        (walk/walk (partial cycle-safe-prewalk handle-fn cycle-fn) identity (handle-fn form))
+
+        (< cycle-depth *max-cycles*)
         (do
           (swap! *cycles* update cycle #(inc (or % 0)))
           (let [r (walk/walk (partial cycle-safe-prewalk handle-fn cycle-fn) identity (handle-fn form))]
             (swap! *cycles* update cycle dec)
             r))
 
-        (handle-fn form)))))
+        :else
+        (do
+          (log/info "cycle-safe-prewalk" "stop cycle for" cycle)
+          (handle-fn form))))))
 
 (defn cycle-safe-prewalk-xml
   [handle-fn cycle-fn xml]
