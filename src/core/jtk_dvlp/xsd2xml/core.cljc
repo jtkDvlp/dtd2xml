@@ -1,69 +1,11 @@
 (ns jtk-dvlp.xsd2xml.core
   (:require
-   [clojure.string :as str]
    [clojure.data.xml :as xml]
    [taoensso.timbre :as log]
 
    [jtk-dvlp.xsd2xml.node :as node]
-   [jtk-dvlp.xsd2xml.util :as util]))
+   [jtk-dvlp.xsd2xml.collect :as collect]))
 
-
-(def ^:private attr-group?
-  (partial node/element-node-with-attrs? :attributeGroup #{:name}))
-
-(defn- ->attr-group-provider
-  [{:keys [target-namespace-alias element-form-default]}
-   {{type-name :name :keys [form]} :attrs :as node}]
-
-  (let [qualified?
-        (#{"qualified"} (or form element-form-default))
-
-        name
-        (if qualified?
-          (str target-namespace-alias ":" type-name)
-          type-name)]
-
-    {:name name
-     :provider (constantly node)}))
-
-(defn- xsd->attr-groups
-  "Collects all attribute-groups of `xsd-nodes` and returns a map of group-name
-  and {:name group-name :provider f}."
-  [context xsd-nodes]
-  (->> xsd-nodes
-       (filter attr-group?)
-       (map (partial ->attr-group-provider context))
-       (util/map-by :name)))
-
-(def ^:private type?
-  (some-fn
-   (partial node/element-node-with-attrs? :complexType #{:name})
-   (partial node/element-node-with-attrs? :simpleType #{:name})))
-
-(defn- ->type-provider
-  [{:keys [target-namespace-alias element-form-default]}
-   {tag-name :tag {type-name :name :keys [form]} :attrs :as node}]
-
-  (let [qualified?
-        (#{"qualified"} (or form element-form-default))
-
-        name'
-        (if qualified?
-          (str target-namespace-alias ":" type-name)
-          type-name)]
-
-    {:name name'
-     :type (-> tag-name (name) (str/replace "Type" "") (keyword))
-     :provider (constantly node)}))
-
-(defn- xsd->types
-  "Collects all complex- and simple-types of `xsd-nodes` and returns a map of type-name
-  and {:name type-name :type [:complex|:simple] :provider f}."
-  [context xsd-nodes]
-  (->> xsd-nodes
-       (filter type?)
-       (map (partial ->type-provider context))
-       (util/map-by :name)))
 
 (defn- assoc-parsed-provider
   [original custom]
@@ -80,13 +22,12 @@
        (name)))
 
 (defn xsd->xml
-  [{:keys [options types attrs attr-groups]} xsd]
-  (let [xsd-str
-        ;; TODO: CLJC!
-        (slurp xsd)
-
-        xsd-nss
-        (node/collect-nss xsd-str)
+  [{:keys [options types attrs attr-groups]} xsd-str]
+  (let [xsd-nss
+        (->> xsd-str
+             (#(xml/parse-str % :namespace-aware false))
+             (:attrs)
+             (filter (comp #{"xmlns"} namespace first)))
 
         {{target-namespace :targetNamespace
           element-form-default :elementFormDefault} :attrs
@@ -105,10 +46,10 @@
          :element-form-default element-form-default}
 
         xsd-types
-        (xsd->types xsd-context xsd-nodes)
+        (collect/collect-types xsd-context xsd-nodes)
 
         xsd-attr-groups
-        (xsd->attr-groups xsd-context xsd-nodes)
+        (collect/collect-attr-groups xsd-context xsd-nodes)
 
         xsd-context
         {:types (merge-with assoc-parsed-provider xsd-types types)
@@ -121,8 +62,11 @@
              (:content)
              (filter element?)
              (first)
-             (#(assoc-in % [:attrs (keyword "xmlns" target-namespace-alias)] target-namespace)))]
-
+             ;; TODO: Warum funktioniert ein eigentlich richtiger ns nicht `(keyword "xmlns" target-namespace-alias)`
+             ;; TODO: Müssten nich auch alle xmlns mit genommen werden, die im endxml verwendet werden?
+             (#(assoc-in % [:attrs :xmlns] target-namespace))
+             (#(assoc-in % [:attrs (str "xmlns:" target-namespace-alias)] target-namespace))
+             )]
 
     xml-root
     ,,,))
@@ -133,8 +77,10 @@
 (comment
   (->> "test.xsd"
        (clojure.java.io/resource)
+       (slurp)
        (xsd->xml {})
-       (clojure.pprint/pprint)
+       ;; (clojure.pprint/pprint)
+       (xml/indent-str)
        )
 
   ,,,)
