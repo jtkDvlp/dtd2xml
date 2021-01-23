@@ -40,6 +40,10 @@
 
    :dev
    {:resource-paths
-    ["resources/dev"]}
+    ["resources/dev"]
+
+    :repl-options
+    {:init-ns
+     jtk-dvlp.xsd2xml.core}}
 
    ,,,})
