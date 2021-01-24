@@ -30,7 +30,7 @@
 
 (def text-node?
   "Is `xml` an text-node (string)?"
-  string?)
+  (some-fn string? number?))
 
 (def node?
   "Is `xml` `element-node` or `text-node`?"

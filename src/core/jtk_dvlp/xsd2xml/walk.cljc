@@ -43,7 +43,7 @@
     (handle-fn xml)
 
     (node/text-node? xml)
-    (str/trim xml)
+    xml
 
     :else xml))
 

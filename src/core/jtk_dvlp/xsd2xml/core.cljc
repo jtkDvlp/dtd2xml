@@ -55,9 +55,11 @@
         (collect/collect-attr-groups xsd-context xsd-nodes)
 
         xsd-context
-        {:types (merge-with assoc-parsed-provider xsd-types types)
+        (assoc
+         xsd-context
+         :types (merge-with assoc-parsed-provider xsd-types types)
          :attr-groups (merge-with assoc-parsed-provider xsd-attr-groups attr-groups)
-         :options (merge {:occurs 3} options)}
+         :options (merge {:occurs 3} options))
 
         xml-root
         (->> xsd-root
@@ -66,19 +68,16 @@
              (first)
              ;; TODO: Warum funktioniert ein eigentlich richtiger ns nicht `(keyword "xmlns" target-namespace-alias)`
              ;; TODO: Müssten nich auch alle xmlns mit genommen werden, die im endxml verwendet werden?
-             (#(assoc-in % [:attrs :xmlns] target-namespace))
-             (#(assoc-in % [:attrs (str "xmlns:" target-namespace-alias)] target-namespace))
              )]
 
-    (walk/cycle-safe-xml-walk
-     (partial expand/expand-xsd xsd-context)
-     (partial contract/contract-xsd xsd-context)
-     expand/type-cycle
-     xml-root)
+    (->> xml-root
+         (walk/cycle-safe-xml-walk
+          (partial expand/expand-xsd xsd-context)
+          (partial contract/contract-xsd xsd-context)
+          expand/type-cycle)
+         (#(assoc-in % [:attrs :xmlns] target-namespace))
+         (#(assoc-in % [:attrs (str "xmlns:" target-namespace-alias)] target-namespace)))
     ,,,))
-
-
-;; TODO: default ns in den providern beachten!
 
 
 (comment

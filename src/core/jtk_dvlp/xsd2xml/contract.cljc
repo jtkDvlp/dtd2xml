@@ -10,16 +10,29 @@
   (or (#{:attribute} tag)
       :content))
 
-(def ^:private ->attr-kv-pair
-  (juxt
-   (comp :name :attrs)
-   (comp str/join :content)))
+(defn- ->attr-kv-pair
+  [{:keys [target-namespace-alias element-form-default]}
+   {:keys [content] {:keys [name form]} :attrs}]
+  (let [name
+        (if (= "qualified" (or form element-form-default))
+          (str target-namespace-alias ":" name)
+          name)
+
+        content
+        (->> content
+             (flatten)
+             (filter node/text-node?)
+             (str/join))]
+
+    [name content]))
 
 (defn- contract-element
-  [_context xsd-node]
-  (let [{:keys [content]
-         {:keys [name]} :attrs}
-        xsd-node
+  [{:keys [target-namespace-alias element-form-default] :as context}
+   {:keys [content] {:keys [name form]} :attrs}]
+  (let [name
+        (if (= "qualified" (or form element-form-default))
+          (str target-namespace-alias ":" name)
+          name)
 
         {:keys [content]
          attrs :attribute}
@@ -32,7 +45,7 @@
 
         attrs
         (->> attrs
-             (map ->attr-kv-pair)
+             (map (partial ->attr-kv-pair context))
              (into {}))]
 
     (xml/element name attrs content)))
