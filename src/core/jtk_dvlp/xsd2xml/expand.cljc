@@ -1,8 +1,7 @@
 (ns jtk-dvlp.xsd2xml.expand
   (:require
    [jtk-dvlp.xsd2xml.util :as util]
-   [jtk-dvlp.xsd2xml.node :as node]
-   [jtk-dvlp.xsd2xml.walk :as walk]))
+   [jtk-dvlp.xsd2xml.node :as node]))
 
 (defn- expand-attribute
   [{:keys [attrs]}
@@ -16,7 +15,9 @@
         expansion
         (expansion-provider original-provider node)]
 
-    (assoc node :content expansion)))
+    (-> node
+        (assoc :content expansion)
+        (update :attrs dissoc :type))))
 
 (defn- expand-attribute-group
   [{:keys [attr-groups]}
@@ -31,7 +32,7 @@
         expansion
         (expansion-provider original-provider node)]
 
-    (assoc node :content expansion)))
+    (:content expansion)))
 
 (defn- expand-type
   [{:keys [types] {:keys [occurs]} :options}
@@ -65,7 +66,7 @@
          (repeatedly expansion-occurs)
          (map #(-> node
                    (assoc :content %)
-                   (update :attrs dissoc :type))))))
+                   (update :attrs dissoc :type :minOccurs :maxOccurs))))))
 
 (defn type-cycle
   [xsd-node]

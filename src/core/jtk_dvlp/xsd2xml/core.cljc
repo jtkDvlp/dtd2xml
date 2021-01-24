@@ -6,7 +6,8 @@
    [jtk-dvlp.xsd2xml.node :as node]
    [jtk-dvlp.xsd2xml.walk :as walk]
    [jtk-dvlp.xsd2xml.collect :as collect]
-   [jtk-dvlp.xsd2xml.expand :as expand]))
+   [jtk-dvlp.xsd2xml.expand :as expand]
+   [jtk-dvlp.xsd2xml.contract :as contract]))
 
 
 (defn- assoc-parsed-provider
@@ -75,11 +76,13 @@
 
     (walk/cycle-safe-xml-walk
      (partial expand/expand-xsd xsd-context)
-     identity
+     (partial contract/contract-xsd xsd-context)
      expand/type-cycle
      xml-root)
     ,,,))
 
+
+;; TODO: default ns in den providern beachten!
 
 
 
@@ -87,7 +90,8 @@
   (->> "test.xsd"
        (clojure.java.io/resource)
        (slurp)
-       (xsd->xml {:types {:default {:provider (constantly "Blindtext")}}})
+       (xsd->xml {:options {:occurs 3}
+                  :types {:default {:provider (constantly ["Blindtext"])}}})
        ;; (clojure.pprint/pprint)
        (xml/indent-str)
        (spit "/tmp/test.xml")
