@@ -5,12 +5,12 @@
 
 (defn- expand-attribute
   [{:keys [attrs]}
-   {{:keys [name]} :attrs :as node}]
+   {{:keys [type]} :attrs :as node}]
   (let [{expansion-provider :provider
          original-provider :parsed-provider}
-        (or (attrs name)
+        (or (attrs type)
             (attrs :default)
-            (throw (ex-info (str "no attr '" name "' nor default") node)))
+            (throw (ex-info (str "no attr '" type "' nor default") node)))
 
         expansion
         (expansion-provider original-provider node)]
@@ -21,13 +21,13 @@
 
 (defn- expand-attribute-group
   [{:keys [attr-groups]}
-   {{:keys [ref]} :attrs :as node}]
+   {{type :ref} :attrs :as node}]
 
   (let [{expansion-provider :provider
-         original-provider :parsed-provider :as x}
-        (or (attr-groups ref)
+         original-provider :parsed-provider}
+        (or (attr-groups type)
             (attr-groups :default)
-            (throw (ex-info (str "no attr-group '" ref "'") node)))
+            (throw (ex-info (str "no attr-group '" type "'") node)))
 
         expansion
         (expansion-provider original-provider node)]

@@ -59,7 +59,7 @@
 
         xsd-context
         {:types (merge-with assoc-parsed-provider xsd-types types)
-         :attrs (merge-with assoc-parsed-provider xsd-attrs types)
+         :attrs (merge-with assoc-parsed-provider xsd-attrs attrs)
          :attr-groups (merge-with assoc-parsed-provider xsd-attr-groups attr-groups)
          :options (merge {:occurs 3} options)}
 
@@ -92,7 +92,9 @@
        (clojure.java.io/resource)
        (slurp)
        (xsd->xml {:options {:occurs 3}
-                  :types {:default {:provider (constantly ["Blindtext"])}}})
+                  :attrs {:default {:provider (constantly "Attribute Default-Wert")}
+                          "xs:integer" {:provider (fn [& _] [(rand-int 999999)])}}
+                  :types {:default {:provider (constantly ["Element Default-Wert"])}}})
        ;; (clojure.pprint/pprint)
        (xml/indent-str)
        (spit "/tmp/test.xml")
