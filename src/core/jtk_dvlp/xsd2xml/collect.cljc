@@ -6,7 +6,7 @@
    [jtk-dvlp.xsd2xml.node :as node]))
 
 
-(defn collect
+(defn- collect
   "Collects all by `collect?` via `collect-fn` of `xsd-nodes` and returns a map of name
   and {:provider f ...}."
   [collect? collect-fn context xsd-nodes]
@@ -15,37 +15,23 @@
        (map (partial collect-fn context))
        (util/map-by :name)))
 
-(defn ->node-provider
+(def ^:private attr-group?
+  (partial node/element-node? :attributeGroup #{:name}))
+
+(defn- ->attr-group-provider
   [{:keys [target-namespace-alias element-form-default]}
-   {{type-name :name :keys [form]} :attrs :as node}]
+   {{group-name :name :keys [form]} :attrs :as node}]
 
   (let [qualified?
         (#{"qualified"} (or form element-form-default))
 
-        name
+        name'
         (if qualified?
-          (str target-namespace-alias ":" type-name)
-          type-name)]
+          (str target-namespace-alias ":" group-name)
+          group-name)]
 
-    {:name name
+    {:name name'
      :provider (constantly node)}))
-
-(def ^:private attr?
-  (partial node/element-node? :attribute #{:name}))
-
-(def ^:private ->attr-provider
-  ->node-provider)
-
-(def collect-attrs
-  "Collects all attributes of `xsd-nodes` and returns a map of group-name
-  and {:name group-name :provider f}."
-  (partial collect attr? ->attr-provider))
-
-(def ^:private attr-group?
-  (partial node/element-node? :attributeGroup #{:name}))
-
-(def ^:private ->attr-group-provider
-  ->node-provider)
 
 (def collect-attr-groups
   "Collects all attribute-groups of `xsd-nodes` and returns a map of group-name

@@ -51,15 +51,11 @@
         xsd-types
         (collect/collect-types xsd-context xsd-nodes)
 
-        xsd-attrs
-        (collect/collect-attrs xsd-context xsd-nodes)
-
         xsd-attr-groups
         (collect/collect-attr-groups xsd-context xsd-nodes)
 
         xsd-context
         {:types (merge-with assoc-parsed-provider xsd-types types)
-         :attrs (merge-with assoc-parsed-provider xsd-attrs attrs)
          :attr-groups (merge-with assoc-parsed-provider xsd-attr-groups attr-groups)
          :options (merge {:occurs 3} options)}
 
@@ -83,8 +79,6 @@
 
 
 ;; TODO: default ns in den providern beachten!
-;; TODO: collect attrs macht gar keinen Sinn, bzw. aber schon die attrs typen!
-
 
 
 (comment
@@ -92,9 +86,8 @@
        (clojure.java.io/resource)
        (slurp)
        (xsd->xml {:options {:occurs 3}
-                  :attrs {:default {:provider (constantly "Attribute Default-Wert")}
-                          "xs:integer" {:provider (fn [& _] [(rand-int 999999)])}}
-                  :types {:default {:provider (constantly ["Element Default-Wert"])}}})
+                  :types {:default {:provider (constantly ["Element Default-Wert"])}
+                          "xs:integer" {:provider (fn [& _] [(rand-int 999999)])}}})
        ;; (clojure.pprint/pprint)
        (xml/indent-str)
        (spit "/tmp/test.xml")

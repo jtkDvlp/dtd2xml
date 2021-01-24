@@ -4,13 +4,13 @@
    [jtk-dvlp.xsd2xml.node :as node]))
 
 (defn- expand-attribute
-  [{:keys [attrs]}
+  [{:keys [types]}
    {{:keys [type]} :attrs :as node}]
   (let [{expansion-provider :provider
          original-provider :parsed-provider}
-        (or (attrs type)
-            (attrs :default)
-            (throw (ex-info (str "no attr '" type "' nor default") node)))
+        (or (types type)
+            (types :default)
+            (throw (ex-info (str "no type '" type "' nor default") node)))
 
         expansion
         (expansion-provider original-provider node)]
