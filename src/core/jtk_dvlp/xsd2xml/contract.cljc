@@ -20,7 +20,6 @@
 
         content
         (->> content
-             (flatten)
              (filter node/text-node?)
              (str/join))]
 
@@ -58,6 +57,9 @@
 
     (node/element-node? :attribute xsd-node)
     xsd-node
+
+    (node/element-node? :annotation xsd-node)
+    nil
 
     :else
     (:content xsd-node)))

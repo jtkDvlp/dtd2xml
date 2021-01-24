@@ -6,17 +6,24 @@
   elementFormDefault="qualified"
   targetNamespace="this-the-target-ns"
 >
-  <xs:element name="list">
+  <xs:element name="root">
     <xs:complexType>
       <xs:sequence>
-        <xs:element name="item" type="my:list-item" maxOccurs="unbounded"/>
+        <xs:element name="list" type="my:list" maxOccurs="1"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>
 
+  <xs:complexType name="list">
+    <xs:sequence>
+      <xs:element name="item" type="my:list-item" maxOccurs="1"/>
+    </xs:sequence>
+  </xs:complexType>
+
   <xs:complexType name="list-item">
     <xs:sequence>
       <xs:element name="comment"  type="xs:string"  minOccurs="" maxOccurs="unbounded"/>
+      <xs:element name="sub-list"  type="my:list"  minOccurs="1" maxOccurs="2"/>
     </xs:sequence>
     <xs:attribute name="id" type="xs:integer"/>
     <xs:attributeGroup ref="my:attributes"/>

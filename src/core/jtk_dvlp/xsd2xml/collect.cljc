@@ -31,7 +31,7 @@
           group-name)]
 
     {:name name'
-     :provider (constantly node)}))
+     :provider (-> node (update :attrs dissoc :name) (constantly))}))
 
 (def collect-attr-groups
   "Collects all attribute-groups of `xsd-nodes` and returns a map of group-name
@@ -57,7 +57,7 @@
 
     {:name name'
      :type (-> tag-name (name) (str/replace "Type" "") (keyword))
-     :provider (constantly node)}))
+     :provider (-> node (update :attrs dissoc :name) (constantly))}))
 
 (def collect-types
   "Collects all complex- and simple-types of `xsd-nodes` and returns a map of type-name

@@ -1,11 +1,15 @@
 (ns jtk-dvlp.xsd2xml.expand
   (:require
+   [taoensso.timbre :as log]
+
    [jtk-dvlp.xsd2xml.util :as util]
    [jtk-dvlp.xsd2xml.node :as node]))
 
 (defn- expand-attribute
   [{:keys [types]}
    {{:keys [type]} :attrs :as node}]
+
+  (log/trace "expand-attribute" node)
   (let [{expansion-provider :provider
          original-provider :parsed-provider}
         (or (types type)
@@ -23,6 +27,7 @@
   [{:keys [attr-groups]}
    {{type :ref} :attrs :as node}]
 
+  (log/trace "expand-attribute-group" node)
   (let [{expansion-provider :provider
          original-provider :parsed-provider}
         (or (attr-groups type)
@@ -38,6 +43,7 @@
   [{:keys [types] {:keys [occurs]} :options}
    {{:keys [type minOccurs maxOccurs]} :attrs :as node}]
 
+  (log/trace "expand-type" node)
   (let [{expansion-provider :provider
          original-provider :parsed-provider}
         (or (types type)
@@ -45,7 +51,7 @@
             (throw (ex-info (str "no type '" type "' nor default") node)))
 
         min-occurs
-        (or (util/parse-int minOccurs) 0)
+        (or (util/parse-int minOccurs) 1)
 
         max-occurs
         (cond
@@ -62,6 +68,8 @@
         (->> (max delta-occours 0)
              (+ min-occurs))]
 
+
+    (log/trace "expand-type" "repeat" expansion-occurs "times")
     (->> #(expansion-provider original-provider node)
          (repeatedly expansion-occurs)
          (map #(-> node
@@ -75,6 +83,7 @@
 
 (defn expand-xsd
   [{:keys [types] :as context} xsd-node]
+  (log/trace "expand-xsd" xsd-node)
   (cond
     (node/element-node? :element #{:type} xsd-node)
     (expand-type context xsd-node)
