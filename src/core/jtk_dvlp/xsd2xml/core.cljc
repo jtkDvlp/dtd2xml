@@ -83,6 +83,7 @@
 
 
 ;; TODO: default ns in den providern beachten!
+;; TODO: collect attrs macht gar keinen Sinn!
 
 
 
