@@ -10,32 +10,32 @@
       (str/split #"\s")))
 
 (defn string-provider
-  []
+  [& _]
   (->> (random-sample 0.01 lorem-ipsum)
        (cons (rand-nth lorem-ipsum))
        (str/join " ")
        (vector)))
 
 (defn decimal-provider
-  []
+  [& _]
   [(* (rand-int 9999) (rand))])
 
 (defn integer-provider
-  []
+  [& _]
   [(rand-int 9999)])
 
 (def float-provider
   decimal-provider)
 
 (defn boolean-provider
-  []
+  [& _]
   [(= 1 (rand-int 2))])
 
 (def ^:private date-formatter
   (time-format/formatter "yyyy-MM-dd"))
 
 (defn date-provider
-  []
+  [& _]
   [(-> (time/now)
        (time/plus (time/days (rand (* 5 365))))
        (time/minus (time/days (rand (* 5 365))))
@@ -45,7 +45,7 @@
   (time-format/formatter "HH:mm:ss"))
 
 (defn time-provider
-  []
+  [& _]
   [(-> (time/now)
        (time/plus (time/seconds (rand (* 24 60 60))))
        (time/minus (time/seconds (rand (* 24 60 60))))

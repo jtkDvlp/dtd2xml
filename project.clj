@@ -15,7 +15,8 @@
   :dependencies
   [[org.clojure/clojure "1.10.0"]
    [org.clojure/data.xml "0.0.8"]
-   [com.taoensso/timbre "5.1.0"]]
+   [com.taoensso/timbre "5.1.0"]
+   [clj-time "0.15.2"]]
 
   :source-paths
   ["src/core"]
