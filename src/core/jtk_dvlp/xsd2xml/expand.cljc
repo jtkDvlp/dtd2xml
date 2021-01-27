@@ -1,5 +1,6 @@
 (ns jtk-dvlp.xsd2xml.expand
   (:require
+   [clojure.string :as str]
    [taoensso.timbre :as log]
 
    [jtk-dvlp.xsd2xml.util :as util]
@@ -20,7 +21,8 @@
         (expansion-provider original-provider node)]
 
     (-> node
-        (assoc :content expansion)
+        ;; TODO: Wie wird expandet und was wird in content gepackt, gerade ziehen!
+        (assoc :content [expansion])
         (update :attrs dissoc :type))))
 
 (defn- expand-attribute-group
@@ -55,6 +57,48 @@
     (-> node
         (update :content conj extension-content)
         (update :attrs dissoc :base))))
+
+(defn- expand-type-list
+  [{:keys [types] {:keys [occurs]} :options :as context}
+   {{:keys [itemType]} :attrs :as node}]
+
+  (log/trace "expand-type-list" node)
+  (let [{expansion-provider :provider
+         original-provider :parsed-provider}
+        (or (types itemType)
+            (throw (ex-info (str "no type '" itemType "'") node)))
+
+        extension-content
+        (->> #(expansion-provider context original-provider node)
+             (repeatedly occurs)
+             (into #{})
+             (str/join " "))]
+
+    (-> node
+        (update :content conj extension-content)
+        (update :attrs dissoc :itemType))))
+
+(defn- expand-type-union
+  [{:keys [types] :as context}
+   {{:keys [memberTypes]} :attrs :as node}]
+
+  (log/trace "expand-type-union" node)
+  (let [memberType
+        (-> memberTypes
+            (str/split #"\s+")
+            (rand-nth))
+
+        {expansion-provider :provider
+         original-provider :parsed-provider}
+        (or (types memberType)
+            (throw (ex-info (str "no type '" memberType "'") node)))
+
+        extension-content
+        (expansion-provider context original-provider node)]
+
+    (-> node
+        (update :content conj extension-content)
+        (update :attrs dissoc :memberType))))
 
 (defn- expand-type
   [{:keys [types] {:keys [occurs]} :options :as context}
@@ -104,6 +148,12 @@
   (cond
     (node/element-node? :element #{:type} xsd-node)
     (expand-type context xsd-node)
+
+    (node/element-node? :list #{:itemType} xsd-node)
+    (expand-type-list context xsd-node)
+
+    (node/element-node? :union #{:memberTypes} xsd-node)
+    (expand-type-union context xsd-node)
 
     (node/element-node? :extension #{:base} xsd-node)
     (expand-type-extension context xsd-node)
