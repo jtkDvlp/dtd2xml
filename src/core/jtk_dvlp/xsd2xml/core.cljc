@@ -92,12 +92,18 @@
 (comment
   (log/set-level! :debug)
 
+  (require 'jtk-dvlp.xsd2xml.provider.primitive-types)
+  (require 'jtk-dvlp.xsd2xml.provider.special-types)
+
   (->> "test.xsd"
        (clojure.java.io/resource)
        (slurp)
-       (xsd->xml {:options {:cycles 2 :occurs 3}
-                  :types {:default {:provider (constantly ["Element Default-Wert"])}
-                          "xs:integer" {:provider (fn [& _] [(rand-int 999999)])}}})
+       (xsd->xml {:options {:cycles 2 :occurs 1}
+                  :types
+                  (merge
+                   jtk-dvlp.xsd2xml.provider.primitive-types/providers
+                   jtk-dvlp.xsd2xml.provider.special-types/providers
+                   {:default {:provider (constantly ["Element Default-Wert"])}})})
        ;; (clojure.pprint/pprint)
        (xml/indent-str)
        (spit "/tmp/test.xml")

@@ -17,21 +17,31 @@
   <xs:complexType name="list">
     <xs:sequence>
       <xs:element name="item" type="my:list-item" maxOccurs="1"/>
+      <xs:attribute name="noSubList" type="xs:boolean"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="sub-list">
+    <xs:sequence>
+      <xs:extension base="my:list">
+        <xs:element name="another-element"  type="xs:string"  minOccurs="" maxOccurs="unbounded"/>
+        <xs:attribute name="isSubList" type="xs:boolean"/>
+      </xs:extension>
     </xs:sequence>
   </xs:complexType>
 
   <xs:complexType name="list-item">
     <xs:sequence>
       <xs:element name="comment"  type="xs:string"  minOccurs="" maxOccurs="unbounded"/>
-      <xs:element name="sub-list"  type="my:list"  minOccurs="1" maxOccurs="2"/>
+      <xs:element name="sub-list"  type="my:sub-list"  minOccurs="1" maxOccurs="2"/>
     </xs:sequence>
     <xs:attribute name="id" type="xs:integer"/>
     <xs:attributeGroup ref="my:attributes"/>
   </xs:complexType>
 
   <xs:attributeGroup name="attributes">
-    <xs:attribute name="idx" type=" xs:token" form="qualified"/>
-    <xs:attribute name="src" type=" xs:token" form="qualified"/>
+    <xs:attribute name="idx" type="xs:token" form="qualified"/>
+    <xs:attribute name="src" type="xs:token" form="qualified"/>
   </xs:attributeGroup>
 
 </xs:schema>

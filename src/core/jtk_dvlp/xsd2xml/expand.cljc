@@ -13,7 +13,7 @@
   (let [{expansion-provider :provider
          original-provider :parsed-provider}
         (or (types type)
-            (types :default)
+            (log/spy :debug (str "expand-attribute default type instead of " type) (types :default))
             (throw (ex-info (str "no type '" type "' nor default") node)))
 
         expansion
@@ -31,7 +31,7 @@
   (let [{expansion-provider :provider
          original-provider :parsed-provider}
         (or (attr-groups type)
-            (attr-groups :default)
+            (log/spy :debug (str "expand-attribute-group default type instead of " type) (attr-groups :default))
             (throw (ex-info (str "no attr-group '" type "'") node)))
 
         expansion
@@ -39,15 +39,32 @@
 
     (:content expansion)))
 
+(defn- expand-type-extension
+  [{:keys [types] :as context}
+   {{:keys [base]} :attrs :as node}]
+
+  (log/trace "expand-type-extension" node)
+  (let [{expansion-provider :provider
+         original-provider :parsed-provider}
+        (or (types base)
+            (throw (ex-info (str "no type '" base "'") node)))
+
+        extension-content
+        (expansion-provider context original-provider node)]
+
+    (-> node
+        (update :content conj extension-content)
+        (update :attrs dissoc :base))))
+
 (defn- expand-type
-  [{:keys [types] {:keys [occurs]} :options}
+  [{:keys [types] {:keys [occurs]} :options :as context}
    {{:keys [type minOccurs maxOccurs]} :attrs :as node}]
 
   (log/trace "expand-type" node)
   (let [{expansion-provider :provider
          original-provider :parsed-provider}
         (or (types type)
-            (types :default)
+            (log/spy :debug (str "expand-type default type instead of " type) (types :default))
             (throw (ex-info (str "no type '" type "' nor default") node)))
 
         min-occurs
@@ -82,19 +99,19 @@
     (get-in xsd-node [:attrs :type])))
 
 (defn expand-xsd
-  [{:keys [types] :as context} xsd-node]
+  [context xsd-node]
   (log/trace "expand-xsd" xsd-node)
   (cond
     (node/element-node? :element #{:type} xsd-node)
     (expand-type context xsd-node)
+
+    (node/element-node? :extension #{:base} xsd-node)
+    (expand-type-extension context xsd-node)
 
     (node/element-node? :attribute #{:type} xsd-node)
     (expand-attribute context xsd-node)
 
     (node/element-node? :attributeGroup #{:ref} xsd-node)
     (expand-attribute-group context xsd-node)
-
-    (node/element-node? :simpleContent xsd-node)
-    (update xsd-node :content conj ((-> types :default :provider)))
 
     :else xsd-node))

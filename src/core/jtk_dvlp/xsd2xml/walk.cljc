@@ -45,9 +45,6 @@
     (node/element-node? xml)
     (handle-fn xml)
 
-    (node/text-node? xml)
-    xml
-
     :else xml))
 
 (defn cycle-safe-xml-walk

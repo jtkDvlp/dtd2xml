@@ -29,7 +29,7 @@
 
 (defn boolean-provider
   [& _]
-  [(= 1 (rand-int 2))])
+  [(str (= 1 (rand-int 2)))])
 
 (def ^:private date-formatter
   (time-format/formatter "yyyy-MM-dd"))
