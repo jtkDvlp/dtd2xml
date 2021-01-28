@@ -41,28 +41,54 @@
 
     (:content expansion)))
 
-(defn- expand-type-extension
-  [{:keys [types] :as context}
-   {{:keys [base]} :attrs :as node}]
+(defn- separate-element-container
+  [content]
+  (-> #(if (#{:sequence :choice :all} (:tag %))
+         :element-container
+         :rest-tags)
+      (group-by content)))
 
-  (log/trace "expand-type-extension" node)
+(defn- expand-extension
+  [{:keys [types] :as context}
+   {{:keys [base]} :attrs
+    extension-content :content :as node}]
+
+  (log/trace "expand-extension" node)
   (let [{expansion-provider :provider
          original-provider :parsed-provider}
         (or (types base)
             (throw (ex-info (str "no type '" base "'") node)))
 
-        extension-content
-        (expansion-provider context original-provider node)]
+        {base-content :content}
+        (expansion-provider context original-provider node)
+
+        {[base-element-container] :element-container
+         base-rest-tags :rest-tags}
+        (separate-element-container base-content)
+
+        {[extension-element-container] :element-container
+         extension-rest-tags :rest-tags}
+        (separate-element-container extension-content)
+
+        rest-tags
+        (concat base-rest-tags extension-rest-tags)
+
+        element-container
+        (->> (:content extension-element-container)
+             (update base-element-container :content concat))
+
+        content
+        (-> (cons element-container rest-tags))]
 
     (-> node
-        (update :content conj extension-content)
+        (assoc :content content)
         (update :attrs dissoc :base))))
 
-(defn- expand-type-list
+(defn- expand-list
   [{:keys [types] {:keys [occurs]} :options :as context}
    {{:keys [itemType]} :attrs :as node}]
 
-  (log/trace "expand-type-list" node)
+  (log/trace "expand-list" node)
   (let [{expansion-provider :provider
          original-provider :parsed-provider}
         (or (types itemType)
@@ -78,11 +104,11 @@
         (update :content conj extension-content)
         (update :attrs dissoc :itemType))))
 
-(defn- expand-type-union
+(defn- expand-union
   [{:keys [types] :as context}
    {{:keys [memberTypes]} :attrs :as node}]
 
-  (log/trace "expand-type-union" node)
+  (log/trace "expand-union" node)
   (let [memberType
         (-> memberTypes
             (str/split #"\s+")
@@ -100,11 +126,11 @@
         (update :content conj extension-content)
         (update :attrs dissoc :memberType))))
 
-(defn- expand-type
+(defn- expand-element
   [{:keys [types] {:keys [occurs]} :options :as context}
    {{:keys [type minOccurs maxOccurs]} :attrs :as node}]
 
-  (log/trace "expand-type" node)
+  (log/trace "expand-element" node)
   (let [{expansion-provider :provider
          original-provider :parsed-provider}
         (or (types type)
@@ -129,34 +155,68 @@
         (->> (max delta-occours 0)
              (+ min-occurs))]
 
-
-    (log/trace "expand-type" "repeat" expansion-occurs "times")
-    (->> #(expansion-provider original-provider node)
+    (log/trace "expand-element" "repeat" expansion-occurs "times")
+    (->> #(expansion-provider context original-provider node)
          (repeatedly expansion-occurs)
          (map #(-> node
                    (assoc :content %)
                    (update :attrs dissoc :type :minOccurs :maxOccurs))))))
 
+(defn- expand-sequence
+  [_context {:keys [content] :as node}]
+
+  (log/trace "expand-sequence" node)
+  (->> content
+       (filter (partial node/element-node? :element #{:type}))
+       (assoc node :content)))
+
+(defn- expand-choice
+  [_context {:keys [content] :as node}]
+
+  (log/trace "expand-choice" node)
+  (->> content
+       (filter (partial node/element-node? :element #{:type}))
+       (rand-nth)
+       (vector)
+       (assoc node :content)))
+
+(defn- expand-all-seq
+  [_context {:keys [content] :as node}]
+
+  (log/trace "expand-all-seq" node)
+  (->> content
+       (filter (partial node/element-node? :element #{:type}))
+       (shuffle)
+       (assoc node :content)))
+
 (defn type-cycle
   [xsd-node]
-  (when (node/attrs? #{:type} xsd-node)
-    (get-in xsd-node [:attrs :type])))
+  (get-in xsd-node [:attrs :type]))
 
 (defn expand-xsd
   [context xsd-node]
   (log/trace "expand-xsd" xsd-node)
   (cond
     (node/element-node? :element #{:type} xsd-node)
-    (expand-type context xsd-node)
+    (expand-element context xsd-node)
+
+    (node/element-node? :sequence xsd-node)
+    (expand-sequence context xsd-node)
+
+    (node/element-node? :choice xsd-node)
+    (expand-choice context xsd-node)
+
+    (node/element-node? :all xsd-node)
+    (expand-all-seq context xsd-node)
 
     (node/element-node? :list #{:itemType} xsd-node)
-    (expand-type-list context xsd-node)
+    (expand-list context xsd-node)
 
     (node/element-node? :union #{:memberTypes} xsd-node)
-    (expand-type-union context xsd-node)
+    (expand-union context xsd-node)
 
     (node/element-node? :extension #{:base} xsd-node)
-    (expand-type-extension context xsd-node)
+    (expand-extension context xsd-node)
 
     (node/element-node? :attribute #{:type} xsd-node)
     (expand-attribute context xsd-node)
