@@ -6,15 +6,39 @@
 
 
 (def ^:private lorem-ipsum
-  (-> "Lorem ipsum dolor sit amet consetetur sadipscing elitr sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat sed diam voluptua At vero eos et accusam et justo duo dolores et ea rebum Stet clita kasd gubergren no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet consetetur sadipscing elitr sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat sed diam voluptua At vero eos et accusam et justo duo dolores et ea rebum Stet clita kasd gubergren no sea takimata sanctus est Lorem ipsum dolor sit amet"
-      (str/split #"\s")))
+  (-> "Lorem ipsum dolor sit amet consetetur sadipscing elitr sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat sed diam voluptua At vero eos et accusam et justo duo dolores et ea rebum Stet clita kasd gubergren no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet consetetur sadipscing elitr sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat sed diam voluptua At vero eos et accusam et justo duo dolores et ea rebum Stet clita kasd gubergren no sea takimata sanctus est Lorem ipsum dolor sit amet"))
 
 (defn string-provider
-  [& _]
-  (->> (random-sample 0.01 lorem-ipsum)
-       (cons (rand-nth lorem-ipsum))
-       (str/join " ")
-       (vector)))
+  [{{:keys [length minLength maxLength enumaration pattern]} :restrictions} & _]
+  (cond
+    enumaration
+    (rand-nth (seq enumaration))
+
+    pattern
+    (throw (ex-info "pattern for string-provider not supported" {:code :unsupported}))
+
+    length
+    (let [offset (rand-int (- (count lorem-ipsum) length))]
+      (subs lorem-ipsum offset (+ offset length)))
+
+    (and minLength maxLength)
+    (let [length (+ minLength (rand-int (- maxLength minLength)))
+          offset (rand-int (- (count lorem-ipsum) length))]
+      (subs lorem-ipsum offset (+ offset length)))
+
+    minLength
+    (string-provider {:restrictions {:minLength minLength :maxLength (count lorem-ipsum)}})
+
+    maxLength
+    (string-provider {:restrictions {:minLength 0 :maxLength maxLength}})
+
+    :else
+    (let [lorem-ipsum (str/split lorem-ipsum #"\s")]
+      (->> (random-sample 0.01 lorem-ipsum)
+           (cons (rand-nth lorem-ipsum))
+           (str/join " ")))
+    ,,,)
+  )
 
 (defn decimal-provider
   [& _]
