@@ -21,6 +21,9 @@
   :source-paths
   ["src/core"]
 
+  :test-paths
+  ["test/core"]
+
   :target-path
   "target/%s"
 
@@ -37,7 +40,10 @@
     [[org.clojure/tools.cli "1.0.194"]]
 
     :source-paths
-    ["src/cli"]}
+    ["src/cli"]
+
+    :test-paths
+    ["test/cli"]}
 
    :dev
    {:resource-paths

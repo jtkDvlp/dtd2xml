@@ -66,7 +66,7 @@
          base-rest-tags :rest-tags}
         (separate-element-container base-content)
 
-        {[extension-element-container] :element-container
+        {[{extension-elements :content}] :element-container
          extension-rest-tags :rest-tags}
         (separate-element-container extension-content)
 
@@ -74,8 +74,55 @@
         (concat base-rest-tags extension-rest-tags)
 
         element-container
-        (->> (:content extension-element-container)
-             (update base-element-container :content concat))
+        (update base-element-container :content concat extension-elements)
+
+        content
+        (-> (cons element-container rest-tags))]
+
+    (-> node
+        (assoc :content content)
+        (update :attrs dissoc :base))))
+
+(defn- merge-elements
+  [by with & xs]
+  (->> xs
+       (apply concat)
+       ;; WATCHOUT: Unsecure ordering
+       (group-by by)
+       (vals)
+       (map with)))
+
+(defn- expand-restriction
+  [{:keys [types] :as context}
+   {{:keys [base]} :attrs
+    extension-content :content :as node}]
+
+  (log/trace "expand-restriction" node)
+  (let [{expansion-provider :provider
+         original-provider :parsed-provider}
+        (or (types base)
+            (throw (ex-info (str "no type '" base "'") node)))
+
+        {base-content :content}
+        (expansion-provider context original-provider node)
+
+        {[{base-elements :content :as base-element-container}] :element-container
+         base-rest-tags :rest-tags}
+        (separate-element-container base-content)
+
+        {[{extension-elements :content}] :element-container
+         extension-rest-tags :rest-tags}
+        (separate-element-container extension-content)
+
+        rest-tags
+        (merge-elements
+         (comp :name :attrs) peek
+         base-rest-tags extension-rest-tags)
+
+        element-container
+        (->> extension-elements
+             (merge-elements (comp :name :attrs) peek base-elements)
+             (assoc base-element-container :content))
 
         content
         (-> (cons element-container rest-tags))]
@@ -217,6 +264,9 @@
 
     (node/element-node? :extension #{:base} xsd-node)
     (expand-extension context xsd-node)
+
+    (node/element-node? :restriction #{:base} xsd-node)
+    (expand-restriction context xsd-node)
 
     (node/element-node? :attribute #{:type} xsd-node)
     (expand-attribute context xsd-node)
