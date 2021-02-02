@@ -92,18 +92,14 @@
        (vals)
        (map with)))
 
-(defn- expand-restriction
-  [{:keys [types] :as context}
-   {{:keys [base]} :attrs
-    extension-content :content :as node}]
+(defn- expand-complex-restriction
+  [context
+   {expansion-provider :provider
+    original-provider :parsed-provider}
+   {restriction-content :content :as node}]
 
-  (log/trace "expand-restriction" node)
-  (let [{expansion-provider :provider
-         original-provider :parsed-provider}
-        (or (types base)
-            (throw (ex-info (str "no type '" base "'") node)))
-
-        {base-content :content}
+  (log/trace "expand-complex-restriction" node)
+  (let [{base-content :content}
         (expansion-provider context original-provider node)
 
         {[{base-elements :content :as base-element-container}] :element-container
@@ -112,7 +108,7 @@
 
         {[{extension-elements :content}] :element-container
          extension-rest-tags :rest-tags}
-        (separate-element-container extension-content)
+        (separate-element-container restriction-content)
 
         rest-tags
         (merge-elements
@@ -130,6 +126,54 @@
     (-> node
         (assoc :content content)
         (update :attrs dissoc :base))))
+
+(defn- simple-elements->map
+  [elements]
+  (reduce
+   (fn [m {:keys [tag] {:keys [value]} :attrs}]
+     (if (contains? m tag)
+       (update m tag #(conj (if (set? %1) %1 #{%1}) %2) value)
+       (assoc m tag value)))
+   {} elements))
+
+(defn- expand-simple-restriction
+  [context
+   {expansion-provider :provider
+    original-provider :parsed-provider}
+   {restriction-content :content :as node}]
+
+  (log/trace "expand-simple-restriction" node)
+  (let [restrictions
+        (simple-elements->map restriction-content)
+
+        ;; TODO: expansion provider vereinheitlichen
+        content
+        (-> context
+            (assoc :original-provider original-provider
+                   :restrictions restrictions)
+            (expansion-provider node))]
+
+    (-> node
+        (assoc :content content)
+        (update :attrs dissoc :base))))
+
+(defn- expand-restriction
+  [{:keys [types] :as context}
+   {{:keys [base]} :attrs :as node}]
+
+  (log/trace "expand-restriction" node)
+  (let [base
+        (or (types base)
+            (throw (ex-info (str "no type '" base "'") node)))]
+
+    (case (:type base)
+      :complex
+      (expand-complex-restriction context base node)
+
+      :simple
+      (expand-simple-restriction context base node)
+
+      (throw (ex-info (str "base type '" type "' not supported") node)))))
 
 (defn- expand-list
   [{:keys [types] {:keys [occurs]} :options :as context}
