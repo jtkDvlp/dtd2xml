@@ -26,7 +26,7 @@
            (xml/element :attribute
              {:name "a" :type "string"}))
 
-         (sut/expand-complex-restriction
+         (#'sut/expand-complex-restriction
           {}
           {:provider
            (constantly
@@ -70,14 +70,14 @@
 
 (t/deftest simple-elements->map-test
   (t/is (= {:a 1 :b 2 :c 3}
-           (sut/simple-elements->map
+           (#'sut/simple-elements->map
             [(xml/element :a {:value 1})
              (xml/element :b {:value 2})
              (xml/element :c {:value 3})]))
     "without multiple values")
 
   (t/is (= {:a 1 :xs #{10 20 30} :c 3}
-           (sut/simple-elements->map
+           (#'sut/simple-elements->map
             [(xml/element :a {:value 1})
              (xml/element :xs {:value 10})
              (xml/element :xs {:value 30})
@@ -92,7 +92,7 @@
               :minLength 2
               :maxLength 3})
 
-           (sut/expand-simple-restriction
+           (#'sut/expand-simple-restriction
             {}
             {:provider
              (fn [context & _] [(:restrictions context)])}
@@ -110,7 +110,7 @@
               :maxLength 3
               :enumeration #{:a :b :c}})
 
-           (sut/expand-simple-restriction
+           (#'sut/expand-simple-restriction
             {}
             {:provider
              (fn [context & _] [(:restrictions context)])}
