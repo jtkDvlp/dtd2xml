@@ -14,6 +14,7 @@
     enumaration
     (rand-nth (seq enumaration))
 
+    ;; TODO: Support it
     pattern
     (throw (ex-info "pattern for string-provider not supported" {:code :unsupported}))
 
